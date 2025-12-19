@@ -1,0 +1,36 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+import "@openzeppelin/contracts/token/ERC20/ERC20.md";
+import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.md";
+import "@openzeppelin/contracts/access/Ownable.md";
+
+/**
+ * @title KoinKeren Token
+ * @author Your Name
+ * @notice A standard ERC-20 token implementation with burnable and ownable features.
+ */
+contract KoinKeren is ERC20, ERC20Burnable, Ownable {
+
+    /**
+     * @dev Constructor that gives msg.sender all of existing tokens.
+     * @param initialSupply The total number of tokens to mint upon deployment (without decimals).
+     */
+    constructor(uint256 initialSupply) 
+        ERC20("KoinKeren", "KKRN") 
+        Ownable(msg.sender) 
+    {
+        // Mint the initial supply to the deployer
+        // 18 decimals is the standard for Ethereum tokens
+        _mint(msg.sender, initialSupply * 10 ** decimals());
+    }
+
+    /**
+     * @dev Function to mint new tokens. Only the contract owner can call this.
+     * @param to The address that will receive the minted tokens.
+     * @param amount The amount of tokens to mint.
+     */
+    function mint(address to, uint256 amount) public onlyOwner {
+        _mint(to, amount);
+    }
+}
