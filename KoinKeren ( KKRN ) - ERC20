@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
@@ -7,30 +7,61 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 
 /**
  * @title KoinKeren Token
- * @author Your Name
- * @notice A standard ERC-20 token implementation with burnable and ownable features.
+ * @author ByteBreaker
+ * @notice ERC-20 token with capped supply, burnable tokens, and controlled minting.
  */
 contract KoinKeren is ERC20, ERC20Burnable, Ownable {
 
+    /// @dev Maximum total supply (immutable = gas efficient)
+    uint256 public immutable MAX_SUPPLY;
+
+    /// @dev Flag to permanently disable minting
+    bool public mintingFinished;
+
+    /// @dev Emitted when new tokens are minted
+    event TokensMinted(address indexed to, uint256 amount);
+
+    /// @dev Emitted when minting is permanently disabled
+    event MintingFinished();
+
     /**
-     * @dev Constructor that gives msg.sender all of existing tokens.
-     * @param initialSupply The total number of tokens to mint upon deployment (without decimals).
+     * @param initialSupply Initial supply (WITHOUT decimals)
+     * @param maxSupply Maximum supply (WITHOUT decimals)
      */
-    constructor(uint256 initialSupply) 
-        ERC20("KoinKeren", "KKRN") 
-        Ownable(msg.sender) 
+    constructor(
+        uint256 initialSupply,
+        uint256 maxSupply
+    )
+        ERC20("KoinKeren", "KKRN")
+        Ownable(msg.sender)
     {
-        // Mint the initial supply to the deployer
-        // 18 decimals is the standard for Ethereum tokens
+        require(maxSupply > 0, "Max supply must be greater than zero");
+        require(initialSupply <= maxSupply, "Initial exceeds max supply");
+
+        MAX_SUPPLY = maxSupply * 10 ** decimals();
+
         _mint(msg.sender, initialSupply * 10 ** decimals());
     }
 
     /**
-     * @dev Function to mint new tokens. Only the contract owner can call this.
-     * @param to The address that will receive the minted tokens.
-     * @param amount The amount of tokens to mint.
+     * @dev Mint new tokens (only owner, only before minting finished)
      */
-    function mint(address to, uint256 amount) public onlyOwner {
+    function mint(address to, uint256 amount) external onlyOwner {
+        require(!mintingFinished, "Minting is finished");
+        require(totalSupply() + amount <= MAX_SUPPLY, "Max supply exceeded");
+
         _mint(to, amount);
+        emit TokensMinted(to, amount);
+    }
+
+    /**
+     * @dev Permanently disable minting
+     * @notice Cannot be reversed
+     */
+    function finishMinting() external onlyOwner {
+        require(!mintingFinished, "Minting already finished");
+
+        mintingFinished = true;
+        emit MintingFinished();
     }
 }
